@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorio de Calibración de Espresso | Barista Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    colors: {
+                        espresso: {
+                            950: '#0f0a07',
+                            900: '#18100c',
+                            800: '#251912',
+                            700: '#38251b',
+                            600: '#4f3527',
+                        },
+                        copper: {
+                            300: '#f3c69f',
+                            400: '#e09f67',
+                            500: '#c87d44',
+                            600: '#a65e2a',
+                        },
+                        crema: {
+                            100: '#fdf8f2',
+                            200: '#f5e6d3',
+                            300: '#e6c8a5',
+                            400: '#d2a271',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0f0a07;
+            background-image: 
+                radial-gradient(at 15% 15%, rgba(200, 125, 68, 0.08) 0px, transparent 50%),
+                radial-gradient(at 85% 85%, rgba(210, 162, 113, 0.06) 0px, transparent 50%);
+            color: #fdf8f2;
+            overflow-x: hidden;
+        }
+
+        /* Custom Sliders */
+        input[type="range"].barista-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 999px;
+            background: #251912;
+            border: 1px solid rgba(200, 125, 68, 0.25);
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        input[type="range"].barista-slider:hover {
+            border-color: rgba(200, 125, 68, 0.55);
+        }
+        input[type="range"].barista-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f3c69f 0%, #c87d44 100%);
+            border: 2px solid #0f0a07;
+            box-shadow: 0 0 12px rgba(200, 125, 68, 0.6);
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        input[type="range"].barista-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            box-shadow: 0 0 18px rgba(224, 159, 103, 0.9);
+        }
+        input[type="range"].barista-slider::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f3c69f 0%, #c87d44 100%);
+            border: 2px solid #0f0a07;
+            box-shadow: 0 0 12px rgba(200, 125, 68, 0.6);
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+
+        /* Glassmorphism Cards */
+        .lab-card {
+            background: rgba(24, 16, 12, 0.78);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(200, 125, 68, 0.18);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7);
+        }
+
+        .lab-card-highlight {
+            background: linear-gradient(180deg, rgba(37, 25, 18, 0.85) 0%, rgba(24, 16, 12, 0.9) 100%);
+            border: 1px solid rgba(224, 159, 103, 0.3);
+        }
+
+        /* Gauge needle transition */
+        .gauge-needle {
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+            transform-origin: 100px 100px;
+        }
+
+        /* Pulse animation for active extraction */
+        @keyframes pulse-copper {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(200, 125, 68, 0.5); }
+            50% { box-shadow: 0 0 0 10px rgba(200, 125, 68, 0); }
+        }
+        .extracting-pulse {
+            animation: pulse-copper 1.6s infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-copper-500 selection:text-espresso-950">
+
+    <header class="border-b border-copper-500/20 bg-espresso-900/80 backdrop-blur-md sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-copper-400 to-copper-600 flex items-center justify-center shadow-lg shadow-copper-500/20">
+                    <svg class="w-6 h-6 text-espresso-950" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 1v3M10 1v3M14 1v3"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-serif text-lg sm:text-xl font-bold tracking-tight text-crema-100">Laboratorio de Calibración de Espresso</h1>
+                        <span class="hidden sm:inline-block text-[11px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-copper-500/20 text-copper-300 border border-copper-500/30">Ratio 1:2 (18g → 36g)</span>
+                    </div>
+                    <p class="text-xs text-crema-300/70">Simulador hidrodinámico y sensorial de extracción en portafiltro desnudo</p>
+                </div>
+            </div>
+
+            <!-- Quick Presets -->
+            <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xs text-crema-300/60 mr-1 hidden md:inline">Perfiles rápidos:</span>
+                <button onclick="applyPreset(335, 89.0, 7.5)" class="text-xs px-3 py-1.5 rounded-lg bg-espresso-800 hover:bg-espresso-700 text-amber-300 border border-amber-500/30 transition flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-amber-400"></span> Sub-extraído (Ácido)
+                </button>
+                <button onclick="applyPreset(250, 93.0, 9.0)" class="text-xs px-3 py-1.5 rounded-lg bg-copper-500/20 hover:bg-copper-500/30 text-crema-100 border border-copper-400/50 transition flex items-center gap-1.5 font-medium">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Punto Dulce (Ideal)
+                </button>
+                <button onclick="applyPreset(185, 96.5, 11.0)" class="text-xs px-3 py-1.5 rounded-lg bg-espresso-800 hover:bg-espresso-700 text-orange-400 border border-orange-500/30 transition flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-red-500"></span> Sobre-extraído (Amargo)
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- LEFT COLUMN: SLIDERS, PUCK MICROSCOPY & ANALOG GAUGES (4 cols) -->
+        <section class="lg:col-span-4 flex flex-col gap-5">
+            
+            <!-- Parameter Controls Card -->
+            <div class="lab-card rounded-2xl p-5 flex flex-col gap-5">
+                <div class="flex items-center justify-between border-b border-copper-500/15 pb-3">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-copper-300 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                        Variables de Calibración
+                    </h2>
+                    <span class="text-xs font-mono text-crema-300/60">Dosis fija: 18.0 g</span>
+                </div>
+
+                <!-- 1. Grind Size Slider -->
+                <div class="flex flex-col gap-2">
+                    <div class="flex justify-between items-baseline">
+                        <label for="grindSlider" class="text-sm font-medium text-crema-100">Grosor de molienda</label>
+                        <div class="flex items-baseline gap-1.5">
+                            <span id="grindValueText" class="font-mono text-lg font-bold text-copper-300">250 μm</span>
+                            <span id="grindLabelBadge" class="text-[11px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Fina Óptima</span>
+                        </div>
+                    </div>
+                    <input id="grindSlider" type="range" min="150" max="400" step="5" value="250" class="barista-slider">
+                    <div class="flex justify-between text-[11px] text-crema-300/50 font-mono">
+                        <span>150 μm (Extra Fina)</span>
+                        <span>250 μm (Ideal)</span>
+                        <span>400 μm (Gruesa)</span>
+                    </div>
+                </div>
+
+                <!-- 2. Water Temperature Slider -->
+                <div class="flex flex-col gap-2">
+                    <div class="flex justify-between items-baseline">
+                        <label for="tempSlider" class="text-sm font-medium text-crema-100">Temperatura del agua</label>
+                        <div class="flex items-baseline gap-1.5">
+                            <span id="tempValueText" class="font-mono text-lg font-bold text-copper-300">93.0 °C</span>
+                            <span id="tempLabelBadge" class="text-[11px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Tueste Medio</span>
+                        </div>
+                    </div>
+                    <input id="tempSlider" type="range" min="86" max="98" step="0.5" value="93" class="barista-slider">
+                    <div class="flex justify-between text-[11px] text-crema-300/50 font-mono">
+                        <span>86 °C (Baja)</span>
+                        <span>93 °C (Estándar)</span>
+                        <span>98 °C (Alta)</span>
+                    </div>
+                </div>
+
+                <!-- 3. Pump Pressure Slider -->
+                <div class="flex flex-col gap-2">
+                    <div class="flex justify-between items-baseline">
+                        <label for="pressureSlider" class="text-sm font-medium text-crema-100">Presión de la bomba</label>
+                        <div class="flex items-baseline gap-1.5">
+                            <span id="pressureValueText" class="font-mono text-lg font-bold text-copper-300">9.0 bar</span>
+                            <span id="pressureLabelBadge" class="text-[11px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Estándar</span>
+                        </div>
+                    </div>
+                    <input id="pressureSlider" type="range" min="4" max="12" step="0.5" value="9" class="barista-slider">
+                    <div class="flex justify-between text-[11px] text-crema-300/50 font-mono">
+                        <span>4.0 bar (Suave)</span>
+                        <span>9.0 bar (Clásica)</span>
+                        <span>12.0 bar (Compresión)</span>
+                    </div>
+                </div>
+
+                <!-- Extraction Action Buttons -->
+                <div class="pt-2 flex flex-col sm:flex-row gap-2.5">
+                    <button id="extractBtn" onclick="toggleExtraction()" class="flex-1 py-3 px-4 rounded-xl font-semibold text-sm bg-gradient-to-r from-copper-500 via-copper-400 to-copper-500 text-espresso-950 shadow-lg shadow-copper-500/25 hover:brightness-110 active:scale-[0.99] transition flex items-center justify-center gap-2">
+                        <svg id="extractBtnIcon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+                        </svg>
+                        <span id="extractBtnText">Extraer Espresso en Vivo</span>
+                    </button>
+                    <button onclick="resetCup()" title="Vaciar taza y reiniciar cronómetro" class="py-3 px-3.5 rounded-xl bg-espresso-800 hover:bg-espresso-700 text-crema-200 border border-copper-500/30 transition flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Pressure Manometer -->
+                <div class="lab-card rounded-2xl p-4 flex flex-col items-center">
+                    <span class="text-[11px] font-mono uppercase tracking-wider text-crema-300/70 mb-1">Manómetro Bomba</span>
+                    <svg viewBox="0 0 200 135" class="w-full max-w-[160px] overflow-visible">
+                        <!-- Gauge Background Arc -->
+                        <path d="M 25 100 A 75 75 0 0 1 175 100" fill="none" stroke="#251912" stroke-width="14" stroke-linecap="round"/>
+                        <!-- Optimal Zone Arc (7 to 9.5 bar) -->
+                        <path d="M 78 30 A 75 75 0 0 1 135 34" fill="none" stroke="#10b981" stroke-width="14" stroke-opacity="0.45"/>
+                        <!-- High Pressure Danger Zone (10 to 12 bar) -->
+                        <path d="M 146 42 A 75 75 0 0 1 175 100" fill="none" stroke="#ef4444" stroke-width="14" stroke-opacity="0.4"/>
+                        <!-- Ticks -->
+                        <text x="16" y="118" fill="#a89078" font-size="10" font-family="JetBrains Mono">4</text>
+                        <text x="95" y="18" fill="#10b981" font-size="10" font-family="JetBrains Mono">8</text>
+                        <text x="128" y="25" fill="#10b981" font-size="10" font-family="JetBrains Mono">9</text>
+                        <text x="172" y="118" fill="#ef4444" font-size="10" font-family="JetBrains Mono">12</text>
+                        <!-- Needle -->
+                        <g id="pressureNeedle" class="gauge-needle" style="transform: rotate(12deg);">
+                            <line x1="100" y1="100" x2="100" y2="32" stroke="#f3c69f" stroke-width="3" stroke-linecap="round"/>
+                            <circle cx="100" cy="100" r="7" fill="#c87d44" stroke="#0f0a07" stroke-width="2"/>
+                        </g>
+                        <text id="gaugePressureReadout" x="100" y="126" text-anchor="middle" fill="#fdf8f2" font-size="16" font-weight="bold" font-family="JetBrains Mono">9.0 bar</text>
+                    </svg>
+                    <span id="puckCompressionAlert" class="text-[11px] text-center text-crema-300/60 mt-1">Flujo laminar estable</span>
+                </div>
+
+                <!-- Flowmeter -->
+                <div class="lab-card rounded-2xl p-4 flex flex-col items-center">
+                    <span class="text-[11px] font-mono uppercase tracking-wider text-crema-300/70 mb-1">Caudalímetro</span>
+                    <svg viewBox="0 0 200 135" class="w-full max-w-[160px] overflow-visible">
+                        <!-- Gauge Background Arc -->
+                        <path d="M 25 100 A 75 75 0 0 1 175 100" fill="none" stroke="#251912" stroke-width="14" stroke-linecap="round"/>
+                        <!-- Sweet spot flow (1.1 to 1.5 ml/s) -->
+                        <path d="M 55 41 A 75 75 0 0 1 98 25" fill="none" stroke="#10b981" stroke-width="14" stroke-opacity="0.45"/>
+                        <!-- Ticks -->
+                        <text x="12" y="118" fill="#a89078" font-size="10" font-family="JetBrains Mono">0.3</text>
+                        <text x="72" y="20" fill="#10b981" font-size="10" font-family="JetBrains Mono">1.3</text>
+                        <text x="168" y="118" fill="#f59e0b" font-size="10" font-family="JetBrains Mono">4.0</text>
+                        <!-- Needle -->
+                        <g id="flowNeedle" class="gauge-needle" style="transform: rotate(-30deg);">
+                            <line x1="100" y1="100" x2="100" y2="32" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+                            <circle cx="100" cy="100" r="7" fill="#0284c7" stroke="#0f0a07" stroke-width="2"/>
+                        </g>
+                        <text id="gaugeFlowReadout" x="100" y="126" text-anchor="middle" fill="#fdf8f2" font-size="16" font-weight="bold" font-family="JetBrains Mono">1.30 ml/s</text>
+                    </svg>
+                    <span id="flowDescription" class="text-[11px] text-center text-crema-300/60 mt-1">Cola de ratón viscosa</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- CENTER COLUMN: LIVE ESPRESSO EXTRACTION VISUALIZER (4 cols) -->
+        <section class="lg:col-span-4 flex flex-col">
+            <div class="lab-card lab-card-highlight rounded-2xl p-4 sm:p-5 flex flex-col items-center relative overflow-hidden">
+                
+                <!-- Top Status Pill -->
+                <div class="w-full flex items-center justify-between mb-2 z-10">
+                    <div class="flex items-center gap-2">
+                        <span id="liveDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                        <span id="liveStatusTitle" class="text-xs font-mono uppercase tracking-wider text-crema-200">Vista Previa Interactiva</span>
+                    </div>
+                    <span id="shotTimerBadge" class="text-xs font-mono px-2.5 py-1 rounded-md bg-espresso-950/80 text-copper-300 border border-copper-500/30">
+                        t = 0.0s / 28.0s
+                    </span>
+                </div>
+
+                <!-- Main Interactive Canvas for Portafilter, Particles, Thermal Steam & Cup -->
+                <div class="w-full relative flex justify-center items-center my-1">
+                    <canvas id="espressoCanvas" width="380" height="450" class="w-full max-w-[360px] h-auto rounded-xl"></canvas>
+                </div>
+
+                <!-- Bottom Live Scale Readout -->
+                <div class="w-full bg-espresso-950/90 border border-copper-500/30 rounded-xl p-3 mt-1 flex items-center justify-between">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-mono uppercase tracking-wider text-crema-300/50">Báscula Digital</span>
+                        <div class="flex items-baseline gap-1">
+                            <span id="scaleWeightText" class="font-mono text-xl font-bold text-crema-100">36.0</span>
+                            <span class="font-mono text-xs text-copper-400">/ 36.0 g</span>
+                        </div>
+                    </div>
+                    <div class="h-8 w-[1px] bg-copper-500/20"></div>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-mono uppercase tracking-wider text-crema-300/50">Aspecto Visual</span>
+                        <span id="cremaVisualLabel" class="text-xs font-medium text-copper-300">Crema avellana tigreada</span>
+                    </div>
+                    <div class="h-8 w-[1px] bg-copper-500/20"></div>
+                    <div class="flex flex-col items-end">
+                        <span class="text-[10px] font-mono uppercase tracking-wider text-crema-300/50">Resistencia Pastilla</span>
+                        <span id="puckResistanceBadge" class="text-xs font-mono text-emerald-400">Óptima</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT COLUMN: TELEMETRY, FLAVOR SPECTRUM & REAL-TIME EXTRACTION GRAPH (4 cols) -->
+        <section class="lg:col-span-4 flex flex-col gap-5">
+            
+            <!-- 4 KPI Cards Grid -->
+            <div class="grid grid-cols-2 gap-3.5">
+                <!-- Extraction Yield (% EY) -->
+                <div class="lab-card rounded-xl p-3.5 border-l-4 border-l-emerald-500" id="eyCard">
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs text-crema-300/70">Rendimiento (% EY)</span>
+                        <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300">Ideal 18-22%</span>
+                    </div>
+                    <div class="mt-1.5 flex items-baseline gap-1.5">
+                        <span id="eyMetricValue" class="font-mono text-2xl font-bold text-crema-100">20.0%</span>
+                        <span id="eyMetricStatus" class="text-xs font-medium text-emerald-400">Óptimo</span>
+                    </div>
+                </div>
+
+                <!-- Shot Time -->
+                <div class="lab-card rounded-xl p-3.5 border-l-4 border-l-copper-400" id="timeCard">
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs text-crema-300/70">Tiempo para 36g</span>
+                        <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-copper-500/15 text-copper-300">Ideal 25-30s</span>
+                    </div>
+                    <div class="mt-1.5 flex items-baseline gap-1.5">
+                        <span id="timeMetricValue" class="font-mono text-2xl font-bold text-crema-100">28 s</span>
+                        <span id="timeMetricStatus" class="text-xs font-medium text-copper-300">En rango</span>
+                    </div>
+                </div>
+
+                <!-- Flow Rate -->
+                <div class="lab-card rounded-xl p-3.5">
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs text-crema-300/70">Caudal Promedio</span>
+                        <span class="text-[10px] font-mono text-crema-300/50">ml / seg</span>
+                    </div>
+                    <div class="mt-1.5 flex items-baseline gap-2">
+                        <span id="flowMetricValue" class="font-mono text-xl font-bold text-crema-100">1.30 ml/s</span>
+                        <span class="text-xs text-crema-300/60">TDS ~10.0%</span>
+                    </div>
+                </div>
+
+                <!-- Brew Ratio -->
+                <div class="lab-card rounded-xl p-3.5">
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs text-crema-300/70">Ratio de Infusión</span>
+                        <span class="text-[10px] font-mono text-copper-300">Normale</span>
+                    </div>
+                    <div class="mt-1.5 flex items-baseline gap-2">
+                        <span class="font-mono text-xl font-bold text-crema-100">1 : 2.0</span>
+                        <span class="text-xs text-crema-300/60">18g → 36g</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sensory Balance & Chemical Compounds Card -->
+            <div class="lab-card rounded-2xl p-5 flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-semibold uppercase tracking-wider text-copper-300">Equilibrio Sensorial y Compuestos</h3>
+                    <span id="sensoryDiagnosisBadge" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        Punto Dulce Equilibrado
+                    </span>
+                </div>
+
+                <!-- Spectrum Bar: Sour (-100) to Sweet (0) to Bitter (+100) -->
+                <div class="flex flex-col gap-1.5">
+                    <div class="flex justify-between text-xs font-medium">
+                        <span class="text-amber-400">Ácido / Salado</span>
+                        <span class="text-emerald-400">Dulce / Complejo</span>
+                        <span class="text-orange-500">Amargo / Seco</span>
+                    </div>
+                    <div class="relative h-4 w-full rounded-full p-0.5 bg-gradient-to-r from-amber-500 via-emerald-500 to-red-700 shadow-inner">
+                        <!-- Center sweet spot bracket -->
+                        <div class="absolute top-0 bottom-0 left-[38%] right-[38%] border-x-2 border-white/40 pointer-events-none"></div>
+                        <!-- Animated Marker -->
+                        <div id="flavorSpectrumThumb" class="
+                            absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-crema-100 border-2 border-espresso-950 shadow-lg transition-all duration-300" style="left: 50%;">
+                        </div>
+                    </div>
+                    <p id="sensoryTastingNotes" class="text-xs text-crema-200/80 italic mt-1">
+                        "Notas de chocolate con leche, caramelo tostado y acidez cítrica integrada con posgusto sedoso."
+                    </p>
+                </div>
+
+                <!-- Extracted Chemical Compounds Breakdown -->
+                <div class="flex flex-col gap-2.5 pt-2 border-t border-copper-500/15">
+                    <!-- Organic Acids -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-crema-200">1. Ácidos orgánicos y sales (Brillo inicial)</span>
+                            <span id="acidsPctText" class="font-mono text-amber-300">34%</span>
+                        </div>
+                        <div class="w-full h-2 bg-espresso-950 rounded-full overflow-hidden">
+                            <div id="acidsBar" class="h-full bg-amber-400 rounded-full transition-all duration-300" style="width: 34%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Sugars & Maillard -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-crema-200">2. Azúcares y compuestos de Maillard (Dulzor y cuerpo)</span>
+                            <span id="sugarsPctText" class="font-mono text-emerald-300">48%</span>
+                        </div>
+                        <div class="w-full h-2 bg-espresso-950 rounded-full overflow-hidden">
+                            <div id="sugarsBar" class="h-full bg-emerald-400 rounded-full transition-all duration-300" style="width: 48%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Bitter Alkaloids & Tannins -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-crema-200">3. Alcaloides, fenoles y taninos (Amargor / Astringencia)</span>
+                            <span id="bittersPctText" class="font-mono text-orange-400">18%</span>
+                        </div>
+                        <div class="w-full h-2 bg-espresso-950 rounded-full overflow-hidden">
+                            <div id="bittersBar" class="h-full bg-gradient-to-r from-orange-500 to-red-600 rounded-full transition-all duration-300" style="width: 18%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real-time Extraction Curve Graph -->
+            <div class="lab-card rounded-2xl p-4 flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-copper-300">Curva Dinámica de Extracción (% EY vs Tiempo)</h3>
+                    <span class="text-[11px] font-mono text-emerald-400/90">Zona Ideal: 18–22% EY</span>
+                </div>
+                <canvas id="curveCanvas" width="420" height="175" class="w-full h-auto rounded-lg bg-espresso-950/60 border border-copper-500/15"></canvas>
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+        // ==========================================
+        // STATE & MODEL PARAMETERS
+        // ==========================================
+        const state = {
+            grind: 250,         // 150 to 400 um
+            temp: 93.0,         // 86 to 98 C
+            pressure: 9.0,      // 4.0 to 12.0 bar
+            
+            // Calculated physical outputs
+            flowRate: 1.30,     // ml/s
+            shotTime: 28,       // seconds for 36g
+            ey: 20.0,           // % Extraction Yield
+            flavorIndex: 0,     // -100 (sour) to +100 (bitter)
+            
+            // Live extraction animation state
+            isExtracting: false,
+            elapsedTime: 0,     // seconds
+            currentWeight: 36.0,// grams in cup (shows 36g in preview mode, 0->36g during live run)
+            previewMode: true,  // When sliders move, show predicted final cup level
+            
+            // Visual particle arrays
+            puckParticles: [],
+            steamParticles: [],
+            streamDrops: []
+        };
+
+        // DOM Elements
+        const grindSlider = document.getElementById('grindSlider');
+        const tempSlider = document.getElementById('tempSlider');
+        const pressureSlider = document.getElementById('pressureSlider');
+
+        const espressoCanvas = document.getElementById('espressoCanvas');
+        const ctx = espressoCanvas.getContext('2d');
+
+        const curveCanvas = document.getElementById('curveCanvas');
+        const curveCtx = curveCanvas.getContext('2d');
+
+        // ==========================================
+        // HYDRODYNAMIC & SENSORY ESPRESSO MODEL
+        // ==========================================
+        function recalculateModel() {
+            const molienda = state.grind;
+            const temperatura = state.temp;
+            const presion = state.pressure;
+
+            // 1. Permeability factor by grind size
+            const factorMolienda = (molienda - 250) / 50;
+
+            // 2. Puck compression effect above 9.5 bar
+            const factorPresionFlujo = 1 + 0.08 * (presion - 9) - 0.035 * Math.pow(Math.max(0, presion - 9), 2);
+
+            // 3. Volumetric flow rate (ml/s)
+            const rawFlow = 1.30 * Math.pow(1.45, factorMolienda) * factorPresionFlujo;
+            state.flowRate = Math.max(0.35, Math.min(4.2, rawFlow));
+
+            // 4. Total shot time for 36g output
+            state.shotTime = Math.round(36 / state.flowRate);
+
+            // 5. Extraction Yield (% EY)
+            const eyRaw = 20.0 
+                - 2.85 * factorMolienda 
+                + 0.35 * (temperatura - 93) 
+                + 0.25 * (presion - 9) 
+                - (presion > 10 ? 0.65 * (presion - 10) : 0);
+            state.ey = Math.max(12.0, Math.min(26.8, eyRaw));
+
+            // 6. Sensory balance index (-100 sour to +100 bitter)
+            state.flavorIndex = Math.max(-100, Math.min(100, (state.ey - 20.0) * 18 + (temperatura - 93) * 2.5));
+
+            updateUIMetrics();
+            generatePuckParticles();
+            drawExtractionCurve();
+        }
+
+        // ==========================================
+        // UI METRICS & GAUGES UPDATER
+        // ==========================================
+        function updateUIMetrics() {
+            // Slider Readouts
+            document.getElementById('grindValueText').textContent = `${state.grind} μm`;
+            document.getElementById('tempValueText').textContent = `${state.temp.toFixed(1)} °C`;
+            document.getElementById('pressureValueText').textContent = `${state.pressure.toFixed(1)} bar`;
+
+            // Grind Badge
+            const grindBadge = document.getElementById('grindLabelBadge');
+            if (state.grind < 210) {
+                grindBadge.textContent = 'Extra Fina (Riesgo Bloqueo)';
+                grindBadge.className = 'text-[11px] px-2 py-0.5 rounded bg-orange-500/20 text-orange-300 border border-orange-500/30';
+            } else if (state.grind <= 285) {
+                grindBadge.textContent = 'Fina Espresso';
+                grindBadge.className = 'text-[11px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+            } else {
+                grindBadge.textContent = 'Gruesa (Flujo Rápido)';
+                grindBadge.className = 'text-[11px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30';
+            }
+
+            // Temp Badge
+            const tempBadge = document.getElementById('tempLabelBadge');
+            if (state.temp < 90.5) {
+                tempBadge.textContent = 'Baja (Tueste Oscuro)';
+                tempBadge.className = 'text-[11px] px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30';
+            } else if (state.temp <= 94.5) {
+                tempBadge.textContent = 'Óptima (Tueste Medio)';
+                tempBadge.className = 'text-[11px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+            } else {
+                tempBadge.textContent = 'Alta (Alta Energía)';
+                tempBadge.className = 'text-[11px] px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30';
+            }
+
+            // Pressure Badge & Alert
+            const pressureBadge = document.getElementById('pressureLabelBadge');
+            const puckAlert = document.getElementById('puckCompressionAlert');
+            if (state.pressure < 7.0) {
+                pressureBadge.textContent = 'Pre-infusión / Suave';
+                pressureBadge.className = 'text-[11px] px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30';
+                puckAlert.textContent = 'Baja emulsión de aceites';
+                puckAlert.className = 'text-[11px] text-center text-sky-300/80 mt-1';
+            } else if (state.pressure <= 9.5) {
+                pressureBadge.textContent = 'Estándar 9 bar';
+                pressureBadge.className = 'text-[11px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+                puckAlert.textContent = 'Emulsión y crema óptimas';
+                puckAlert.className = 'text-[11px] text-center text-emerald-400/80 mt-1';
+            } else {
+                pressureBadge.textContent = 'Compresión de Pastilla';
+                pressureBadge.className = 'text-[11px] px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30';
+                puckAlert.textContent = '¡Compactación y canalización!';
+                puckAlert.className = 'text-[11px] text-center text-red-400 font-medium mt-1';
+            }
+
+            // Circular Gauges Rotation (-85 deg to +85 deg)
+            const pressureAngle = -85 + ((state.pressure - 4) / (12 - 4)) * 170;
+            document.getElementById('pressureNeedle').style.transform = `rotate(${pressureAngle}deg)`;
+            document.getElementById('gaugePressureReadout').textContent = `${state.pressure.toFixed(1)} bar`;
+
+            const flowAngle = -85 + ((state.flowRate - 0.35) / (4.2 - 0.35)) * 170;
+            document.getElementById('flowNeedle').style.transform = `rotate(${flowAngle}deg)`;
+            document.getElementById('gaugeFlowReadout').textContent = `${state.flowRate.toFixed(2)} ml/s`;
+
+            const flowDesc = document.getElementById('flowDescription');
+            if (state.flowRate < 0.95) {
+                flowDesc.textContent = 'Goteo restringido / Lento';
+                flowDesc.className = 'text-[11px] text-center text-orange-400 mt-1';
+            } else if (state.flowRate <= 1.65) {
+                flowDesc.textContent = 'Cola de ratón mielosa';
+                flowDesc.className = 'text-[11px] text-center text-emerald-400 mt-1';
+            } else {
+                flowDesc.textContent = 'Cascada turbulenta / Rubio';
+                flowDesc.className = 'text-[11px] text-center text-amber-400 mt-1';
+            }
+
+            // KPI Cards
+            document.getElementById('eyMetricValue').textContent = `${state.ey.toFixed(1)}%`;
+            const eyStatus = document.getElementById('eyMetricStatus');
+            const eyCard = document.getElementById('eyCard');
+            if (state.ey < 18.0) {
+                eyStatus.textContent = 'Sub-extraído';
+                eyStatus.className = 'text-xs font-medium text-amber-400';
+                eyCard.className = 'lab-card rounded-xl p-3.5 border-l-4 border-l-amber-400';
+            } else if (state.ey <= 22.0) {
+                eyStatus.textContent = 'Sweet Spot';
+                eyStatus.className = 'text-xs font-medium text-emerald-400';
+                eyCard.className = 'lab-card rounded-xl p-3.5 border-l-4 border-l-emerald-400';
+            } else {
+                eyStatus.textContent = 'Sobre-extraído';
+                eyStatus.className = 'text-xs font-medium text-red-400';
+                eyCard.className = 'lab-card rounded-xl p-3.5 border-l-4 border-l-red-500';
+            }
+
+            document.getElementById('timeMetricValue').textContent = `${state.shotTime} s`;
+            const timeStatus = document.getElementById('timeMetricStatus');
+            if (state.shotTime < 22) {
+                timeStatus.textContent = 'Muy rápido';
+                timeStatus.className = 'text-xs font-medium text-amber-400';
+            } else if (state.shotTime <= 32) {
+                timeStatus.textContent = 'Ideal (25-30s)';
+                timeStatus.className = 'text-xs font-medium text-emerald-400';
+            } else {
+                timeStatus.textContent = 'Muy lento';
+                timeStatus.className = 'text-xs font-medium text-orange-400';
+            }
+
+            document.getElementById('flowMetricValue').textContent = `${state.flowRate.toFixed(2)} ml/s`;
+
+            // Flavor Spectrum Thumb (0% to 100% left)
+            const spectrumPct = Math.max(4, Math.min(96, 50 + (state.flavorIndex / 2)));
+            document.getElementById('flavorSpectrumThumb').style.left = `${spectrumPct}%`;
+
+            // Sensory Diagnosis & Compounds Bars
+            const diagBadge = document.getElementById('sensoryDiagnosisBadge');
+            const notes = document.getElementById('sensoryTastingNotes');
+            const cremaLabel = document.getElementById('cremaVisualLabel');
+            const resistanceBadge = document.getElementById('puckResistanceBadge');
+
+            // Compute chemical proportions based on EY and Temp
+            let acids, sugars, bitters;
+            if (state.ey < 18.0) {
+                acids = Math.round(52 + (18 - state.ey) * 3.5);
+                sugars = Math.round(36 - (18 - state.ey) * 2.2);
+                bitters = Math.max(5, 100 - acids - sugars);
+
+                diagBadge.textContent = 'Sub-extraído (Ácido / Salado)';
+                diagBadge.className = 'text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30';
+                notes.textContent = '"Acidez punzante, cuerpo acuoso, falta de dulzor y final corto ligeramente salado."';
+                cremaLabel.textContent = 'Crema rubia pálida y delgada';
+                resistanceBadge.textContent = 'Baja (Porosa)';
+                resistanceBadge.className = 'text-xs font-mono text-amber-400';
+            } else if (state.ey <= 22.0) {
+                acids = Math.round(32 - (state.ey - 20) * 2);
+                sugars = Math.round(50 - Math.abs(state.ey - 20) * 1.5);
+                bitters = 100 - acids - sugars;
+
+                diagBadge.textContent = 'Extracción Óptima (Dulce y Balanceado)';
+                diagBadge.className = 'text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+                notes.textContent = '"Notas de chocolate con leche, caramelo tostado y acidez frutal integrada con cuerpo sedoso."';
+                cremaLabel.textContent = 'Avellana elástica con tigreado';
+                resistanceBadge.textContent = 'Óptima (Uniforme)';
+                resistanceBadge.className = 'text-xs font-mono text-emerald-400';
+            } else {
+                bitters = Math.round(35 + (state.ey - 22) * 5.2);
+                sugars = Math.round(42 - (state.ey - 22) * 3.0);
+                acids = Math.max(10, 100 - bitters - sugars);
+
+                diagBadge.textContent = 'Sobre-extraído (Amargo / Astringente)';
+                diagBadge.className = 'text-xs font-semibold px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/30';
+                notes.textContent = '"Amargor intenso a cacao oscuro/ceniza, sequedad en el paladar (astringencia) y notas huecas."';
+                cremaLabel.textContent = 'Oscura con aro negro y mancha';
+                resistanceBadge.textContent = 'Alta (Restringida)';
+                resistanceBadge.className = 'text-xs font-mono text-orange-400';
+            }
+
+            document.getElementById('acidsPctText').textContent = `${acids}%`;
+            document.getElementById('acidsBar').style.width = `${acids}%`;
+            document.getElementById('sugarsPctText').textContent = `${sugars}%`;
+            document.getElementById('sugarsBar').style.width = `${sugars}%`;
+            document.getElementById('bittersPctText').textContent = `${bitters}%`;
+            document.getElementById('bittersBar').style.width = `${bitters}%`;
+
+            if (state.previewMode && !state.isExtracting) {
+                state.currentWeight = 36.0;
+                state.elapsedTime = state.shotTime;
+                document.getElementById('scaleWeightText').textContent = '36.0';
+                document.getElementById('shotTimerBadge').textContent = `Estimado: ${state.shotTime}.0s`;
+            }
+        }
+
+        // ==========================================
+        // PUCK GROUNDS & THERMAL PARTICLES GENERATOR
+        // ==========================================
+        function generatePuckParticles() {
+            state.puckParticles = [];
+            // Visual particle radius scales with grind size (150um -> 1.6px, 400um -> 4.6px)
+            const baseRadius = 1.4 + ((state.grind - 150) / 250) * 3.3;
+            const basketLeft = 112;
+            const basketRight = 268;
+            const basketTop = 58;
+            const basketBottom = 96;
+
+            // Fill basket cross-section with coffee grounds
+            const count = Math.floor(220 - ((state.grind - 150) / 250) * 115);
+            for (let i = 0; i < count; i++) {
+                state.puckParticles.push({
+                    x: basketLeft + 6 + Math.random() * (basketRight - basketLeft - 12),
+                    y: basketTop + 5 + Math.random() * (basketBottom - basketTop - 10),
+                    r: baseRadius * (0.8 + Math.random() * 0.45),
+                    shade: Math.random() > 0.5 ? '#3b2314' : '#52321e'
+                });
+            }
+        }
+
+        function initSteamAndStream() {
+            state.steamParticles = [];
+            for (let i = 0; i < 18; i++) {
+                state.steamParticles.push({
+                    x: 110 + Math.random() * 160,
+                    y: 40 + Math.random() * 200,
+                    vx: (Math.random() - 0.5) * 0.4,
+                    vy: -0.4 - Math.random() * 0.8,
+                    size: 12 + Math.random() * 22,
+                    alpha: Math.random() * 0.5
+                });
+            }
+
+            state.streamDrops = [];
+            for (let i = 0; i < 28; i++) {
+                state.streamDrops.push({
+                    y: 122 + Math.random() * 185,
+                    offset: (Math.random() - 0.5) * 6,
+                    speed: 2 + Math.random() * 2
+                });
+            }
+        }
+
+        // ==========================================
+        // MAIN ESPRESSO CANVAS ANIMATION LOOP
+        // ==========================================
+        let lastFrameTime = performance.now();
+
+        function renderEspressoScene(now) {
+            const dt = (now - lastFrameTime) / 1000;
+            lastFrameTime = now;
+
+            // Update live extraction progress if active
+            if (state.isExtracting) {
+                state.elapsedTime += dt;
+                state.currentWeight = Math.min(36.0, state.elapsedTime * state.flowRate);
+
+                document.getElementById('scaleWeightText').textContent = state.currentWeight.toFixed(1);
+                document.getElementById('shotTimerBadge').textContent = `t = ${state.elapsedTime.toFixed(1)}s / ${state.shotTime}s`;
+
+                drawExtractionCurve();
+
+                if (state.currentWeight >= 36.0) {
+                    finishExtraction();
+                }
+            }
+
+            ctx.clearRect(0, 0, espressoCanvas.width, espressoCanvas.height);
+
+            // 1. THERMAL HALO & STEAM (Responds to Water Temperature 86C - 98C)
+            const tempNormalized = (state.temp - 86) / 12; // 0 to 1
+            const haloGrad = ctx.createRadialGradient(190, 95, 15, 190, 120, 145);
+            const rCol = Math.round(180 + tempNormalized * 75);
+            const gCol = Math.round(110 - tempNormalized * 50);
+            const bCol = Math.round(60 - tempNormalized * 40);
+            haloGrad.addColorStop(0, `rgba(${rCol}, ${gCol}, ${bCol}, ${0.14 + tempNormalized * 0.22})`);
+            haloGrad.addColorStop(1, 'rgba(15, 10, 7, 0)');
+            ctx.fillStyle = haloGrad;
+            ctx.fillRect(0, 0, espressoCanvas.width, 280);
+
+            // Rising thermal vapor plumes
+            state.steamParticles.forEach(sp => {
+                sp.y += sp.vy * (0.6 + tempNormalized * 1.3);
+                sp.x += Math.sin(now * 0.002 + sp.y * 0.05) * 0.35;
+                if (sp.y < 15) {
+                    sp.y = 260;
+                    sp.x = 120 + Math.random() * 140;
+                }
+                const steamGrad = ctx.createRadialGradient(sp.x, sp.y, 2, sp.x, sp.y, sp.size);
+                steamGrad.addColorStop(0, `rgba(${rCol}, 180, 150, ${0.06 + tempNormalized * 0.14})`);
+                steamGrad.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.fillStyle = steamGrad;
+                ctx.beginPath();
+                ctx.arc(sp.x, sp.y, sp.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // 2. GROUPHEAD & NAKED PORTAFILTER (Cutaway view showing coffee puck)
+            // Grouphead top metallic mount
+            ctx.fillStyle = '#272220';
+            ctx.beginPath();
+            ctx.roundRect(92, 18, 196, 26, 6);
+            ctx.fill();
+            ctx.strokeStyle = '#c87d44';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Portafilter handle extending to the right
+            const handleGrad = ctx.createLinearGradient(275, 55, 375, 78);
+            handleGrad.addColorStop(0, '#a65e2a');
+            handleGrad.addColorStop(0.25, '#2b1b12');
+            handleGrad.addColorStop(1, '#140c08');
+            ctx.fillStyle = handleGrad;
+            ctx.beginPath();
+            ctx.roundRect(272, 54, 102, 24, 10);
+            ctx.fill();
+
+            // Portafilter Basket Body (Cutaway window to inspect grind size)
+            ctx.fillStyle = '#1c1613';
+            ctx.strokeStyle = '#d2a271';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.roundRect(104, 44, 172, 62, [4, 4, 22, 22]);
+            ctx.fill();
+            ctx.stroke();
+
+            // Water dispersion shower screen at top of basket
+            ctx.strokeStyle = '#60a5fa';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(114, 52);
+            ctx.lineTo(266, 52);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Compression arrows when pressure > 9.5 bar
+            const puckCompressionOffset = state.pressure > 9.5 ? (state.pressure - 9.5) * 2.2 : 0;
+
+            // Draw coffee grounds inside basket
+            state.puckParticles.forEach(p => {
+                ctx.fillStyle = p.shade;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y + puckCompressionOffset * 0.5, p.r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(243, 198, 159, 0.22)';
+                ctx.lineWidth = 0.6;
+                ctx.stroke();
+            });
+
+            // Bottomless perforated mesh & brass cone
+            ctx.fillStyle = '#c87d44';
+            ctx.beginPath();
+            ctx.roundRect(130, 104, 120, 8, 4);
+            ctx.fill();
+
+            // 3. ESPRESSO STREAM (Color, thickness & flow speed adapt to calibration)
+            const showStream = state.isExtracting || state.previewMode;
+            if (showStream) {
+                // Determine stream color based on Extraction Yield
+                let streamCoreColor, streamEdgeColor;
+                if (state.ey < 18.0) {
+                    // Under-extracted: watery blonde / pale amber
+                    streamCoreColor = '#eab308';
+                    streamEdgeColor = '#fef08a';
+                } else if (state.ey <= 22.0) {
+                    // Sweet spot: rich hazelnut tiger-striped honey
+                    streamCoreColor = '#7c2d12';
+                    streamEdgeColor = '#d97706';
+                } else {
+                    // Over-extracted: very dark black-brown thin drip
+                    streamCoreColor = '#1c0d06';
+                    streamEdgeColor = '#451a03';
+                }
+
+                // Stream width scales with flow rate
+                const streamHalfWidth = Math.max(2.2, Math.min(13, state.flowRate * 4.2));
+                const cupLiquidSurfaceY = 392 - (state.currentWeight / 36.0) * 105;
+
+                // Draw converging cone from basket mesh
+                const coneGrad = ctx.createLinearGradient(190, 112, 190, cupLiquidSurfaceY);
+                coneGrad.addColorStop(0, streamEdgeColor);
+                coneGrad.addColorStop(0.35, streamCoreColor);
+                coneGrad.addColorStop(1, streamEdgeColor);
+
+                ctx.fillStyle = coneGrad;
+                ctx.beginPath();
+                ctx.moveTo(155, 112);
+                ctx.quadraticCurveTo(188 - streamHalfWidth, 155, 190 - streamHalfWidth * 0.75, cupLiquidSurfaceY);
+                ctx.lineTo(190 + streamHalfWidth * 0.75, cupLiquidSurfaceY);
+                ctx.quadraticCurveTo(192 + streamHalfWidth, 155, 225, 112);
+                ctx.closePath();
+                ctx.fill();
+
+                // Animated Tiger Stripes / Falling Droplets inside the stream
+                const speedMultiplier = state.flowRate * 2.6;
+                state.streamDrops.forEach(d => {
+                    d.y += d.speed * speedMultiplier * 0.65;
+                    if (d.y > cupLiquidSurfaceY) {
+                        d.y = 114;
+                    }
+                    ctx.fillStyle = state.ey <= 22 && state.ey >= 18 ? '#f59e0b' : streamEdgeColor;
+                    ctx.beginPath();
+                    const w = Math.max(1.5, streamHalfWidth * 0.45);
+                    ctx.ellipse(190 + d.offset * (streamHalfWidth / 7), d.y, w, 5, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // Channeling spurts if pressure > 10.5 bar or grind too coarse
+                if (state.pressure >= 10.5) {
+                    ctx.strokeStyle = 'rgba(217, 119, 6, 0.55)';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(172, 115);
+                    ctx.lineTo(135 + Math.sin(now * 0.03) * 8, 220);
+                    ctx.stroke();
+                }
+            }
+
+            // 4. GLASS DEMITASSE ESPRESSO CUP (Front elevation)
+            const cupTopY = 262;
+            const cupBottomY = 396;
+            const cupHalfWidthTop = 74;
+            const cupHalfWidthBottom = 52;
+
+            // Liquid fill height based on currentWeight (0 to 36g)
+            const fillRatio = Math.max(0.02, Math.min(1, state.currentWeight / 36.0));
+            const totalCupInnerHeight = 114;
+            const liquidHeight = fillRatio * totalCupInnerHeight;
+            const liquidTopY = cupBottomY - 8 - liquidHeight;
+
+            // Interpolate cup width at current liquid height
+            const widthAtLiquidTop = cupHalfWidthBottom + (cupHalfWidthTop - cupHalfWidthBottom) * (liquidHeight / totalCupInnerHeight) - 5;
+
+            if (state.currentWeight > 0.2) {
+                // Liquid Body Color
+                const liqGrad = ctx.createLinearGradient(190, liquidTopY, 190, cupBottomY - 6);
+                if (state.ey < 18.0) {
+                    liqGrad.addColorStop(0, '#b45309');
+                    liqGrad.addColorStop(1, '#451a03');
+                } else if (state.ey <= 22.0) {
+                    liqGrad.addColorStop(0, '#78350f');
+                    liqGrad.addColorStop(0.3, '#2e1305');
+                    liqGrad.addColorStop(1, '#140802');
+                } else {
+                    liqGrad.addColorStop(0, '#1f0d05');
+                    liqGrad.addColorStop(1, '#090401');
+                }
+
+                ctx.fillStyle = liqGrad;
+                ctx.beginPath();
+                ctx.moveTo(190 - widthAtLiquidTop, liquidTopY);
+                ctx.lineTo(190 + widthAtLiquidTop, liquidTopY);
+                ctx.lineTo(190 + cupHalfWidthBottom - 6, cupBottomY - 8);
+                ctx.quadraticCurveTo(190, cupBottomY - 2, 190 - cupHalfWidthBottom + 6, cupBottomY - 8);
+                ctx.closePath();
+                ctx.fill();
+
+                // Crema Layer on top of Espresso
+                let cremaThickness = 14 * fillRatio;
+                let cremaColorTop = '#e09f67';
+                let cremaColorBottom = '#9a5825';
+
+                if (state.ey < 18.0) {
+                    cremaThickness = 7 * fillRatio; // Thin pale crema
+                    cremaColorTop = '#fde68a';
+                    cremaColorBottom = '#d97706';
+                } else if (state.ey > 22.0) {
+                    cremaThickness = 9 * fillRatio; // Dark burnt ring crema
+                    cremaColorTop = '#78350f';
+                    cremaColorBottom = '#290f02';
+                }
+
+                const cremaGrad = ctx.createLinearGradient(190, liquidTopY - cremaThickness, 190, liquidTopY + 2);
+                cremaGrad.addColorStop(0, cremaColorTop);
+                cremaGrad.addColorStop(1, cremaColorBottom);
+
+                ctx.fillStyle = cremaGrad;
+                ctx.beginPath();
+                ctx.roundRect(190 - widthAtLiquidTop, liquidTopY - cremaThickness * 0.7, widthAtLiquidTop * 2, cremaThickness, 4);
+                ctx.fill();
+
+                // Tiger mottling dots on optimal crema
+                if (state.ey >= 18.0 && state.ey <= 22.0 && fillRatio > 0.3) {
+                    ctx.fillStyle = '#7c2d12';
+                    for (let i = -3; i <= 3; i++) {
+                        ctx.beginPath();
+                        ctx.arc(190 + i * 14, liquidTopY - cremaThickness * 0.3, 2.2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+
+            // Glass Cup Handle (Right side)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.32)';
+            ctx.lineWidth = 7;
+            ctx.beginPath();
+            ctx.arc(258, 326, 28, -Math.PI * 0.42, Math.PI * 0.45);
+            ctx.stroke();
+
+            // Glass Cup Walls & Rim
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.48)';
+            ctx.lineWidth = 3.5;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+            ctx.beginPath();
+            ctx.moveTo(190 - cupHalfWidthTop, cupTopY);
+            ctx.lineTo(190 - cupHalfWidthBottom, cupBottomY);
+            ctx.quadraticCurveTo(190, cupBottomY + 8, 190 + cupHalfWidthBottom, cupBottomY);
+            ctx.lineTo(190 + cupHalfWidthTop, cupTopY);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // 36g Target Calibration Line on Glass
+            const target36gY = cupBottomY - 8 - totalCupInnerHeight;
+            ctx.strokeStyle = 'rgba(16, 185, 129, 0.65)';
+            ctx.lineWidth = 1.2;
+            ctx.setLineDash([4, 3]);
+            ctx.beginPath();
+            ctx.moveTo(132, target36gY);
+            ctx.lineTo(248, target36gY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#10b981';
+            ctx.font = '10px JetBrains Mono';
+            ctx.fillText('36g (1:2)', 202, target36gY - 5);
+
+            // Digital Espresso Scale Base under Cup
+            ctx.fillStyle = '#1c1613';
+            ctx.strokeStyle = '#523828';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(102, 404, 176, 22, 6);
+            ctx.fill();
+            ctx.stroke();
+
+            requestAnimationFrame(renderEspressoScene);
+        }
+
+        // ==========================================
+        // DYNAMIC EXTRACTION CURVE GRAPH (% EY vs Time)
+        // ==========================================
+        function drawExtractionCurve() {
+            const w = curveCanvas.width;
+            const h = curveCanvas.height;
+            curveCtx.clearRect(0, 0, w, h);
+
+            const padL = 38;
+            const padR = 18;
+            const padT = 16;
+            const padB = 26;
+            const plotW = w - padL - padR;
+            const plotH = h - padT - padB;
+
+            // X axis: 0 to 45 seconds | Y axis: 0 to 28 % EY
+            const xToPx = (t) => padL + (t / 45) * plotW;
+            const yToPx = (ey) => padT + plotH - (ey / 28) * plotH;
+
+            // 1. Ideal Sweet Spot Band (18% to 22% EY, 25s to 30s)
+            const y22 = yToPx(22);
+            const y18 = yToPx(18);
+            curveCtx.fillStyle = 'rgba(16, 185, 129, 0.13)';
+            curveCtx.fillRect(padL, y22, plotW, y18 - y22);
+
+            // Target time box (25-30s within 18-22% EY)
+            curveCtx.fillStyle = 'rgba(16, 185, 129, 0.28)';
+            curveCtx.strokeStyle = 'rgba(16, 185, 129, 0.7)';
+            curveCtx.lineWidth = 1;
+            curveCtx.fillRect(xToPx(25), y22, xToPx(30) - xToPx(25), y18 - y22);
+            curveCtx.strokeRect(xToPx(25), y22, xToPx(30) - xToPx(25), y18 - y22);
+
+            // Grid lines & labels
+            curveCtx.strokeStyle = 'rgba(200, 125, 68, 0.14)';
+            curveCtx.fillStyle = '#a89078';
+            curveCtx.font = '10px JetBrains Mono';
+            [10, 18, 22, 26].forEach(eyVal => {
+                const py = yToPx(eyVal);
+                curveCtx.beginPath();
+                curveCtx.moveTo(padL, py);
+                curveCtx.lineTo(w - padR, py);
+                curveCtx.stroke();
+                curveCtx.fillText(`${eyVal}%`, 6, py + 3);
+            });
+
+            [10, 20, 27.5, 40].forEach(tVal => {
+                const px = xToPx(tVal);
+                curveCtx.fillText(`${Math.round(tVal)}s`, px - 10, h - 7);
+            });
+
+            // 2. Plot Logarithmic Extraction Curve up to current shotTime
+            const maxPlotTime = state.isExtracting ? state.elapsedTime : state.shotTime;
+            curveCtx.strokeStyle = state.ey < 18 ? '#fbbf24' : (state.ey <= 22 ? '#10b981' : '#ef4444');
+            curveCtx.lineWidth = 2.8;
+            curveCtx.beginPath();
+
+            for (let t = 0; t <= Math.min(45, maxPlotTime); t += 0.5) {
+                // Exponential saturation curve reaching state.ey at state.shotTime
+                const progress = t / Math.max(1, state.shotTime);
+                const eyAtT = state.ey * (1 - Math.exp(-3.2 * progress)) / (1 - Math.exp(-3.2));
+                const px = xToPx(t);
+                const py = yToPx(Math.min(27.5, eyAtT));
+                if (t === 0) curveCtx.moveTo(px, py);
+                else curveCtx.lineTo(px, py);
+            }
+            curveCtx.stroke();
+
+            // 3. Draw End Point Marker
+            const endT = Math.min(45, maxPlotTime);
+            const endProgress = endT / Math.max(1, state.shotTime);
+            const currentEyPoint = state.ey * (1 - Math.exp(-3.2 * endProgress)) / (1 - Math.exp(-3.2));
+            const ptX = xToPx(endT);
+            const ptY = yToPx(Math.min(27.5, currentEyPoint));
+
+            curveCtx.fillStyle = '#fdf8f2';
+            curveCtx.beginPath();
+            curveCtx.arc(ptX, ptY, 5, 0, Math.PI * 2);
+            curveCtx.fill();
+            curveCtx.strokeStyle = '#0f0a07';
+            curveCtx.lineWidth = 2;
+            curveCtx.stroke();
+        }
+
+        // ==========================================
+        // USER INTERACTION CONTROLS
+        // ==========================================
+        function toggleExtraction() {
+            const btn = document.getElementById('extractBtn');
+            const btnText = document.getElementById('extractBtnText');
+            const liveDot = document.getElementById('liveDot');
+            const liveTitle = document.getElementById('liveStatusTitle');
+
+            if (!state.isExtracting) {
+                state.isExtracting = true;
+                state.previewMode = false;
+                state.elapsedTime = 0;
+                state.currentWeight = 0;
+                btn.classList.add('extracting-pulse');
+                btnText.textContent = 'Detener Extracción';
+                liveDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping';
+                liveTitle.textContent = 'Extrayendo en Tiempo Real...';
+            } else {
+                finishExtraction();
+            }
+        }
+
+        function finishExtraction() {
+            state.isExtracting = false;
+            const btn = document.getElementById('extractBtn');
+            const btnText = document.getElementById('extractBtnText');
+            const liveDot = document.getElementById('liveDot');
+            const liveTitle = document.getElementById('liveStatusTitle');
+
+            btn.classList.remove('extracting-pulse');
+            btnText.textContent = 'Extraer Espresso en Vivo';
+            liveDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+            liveTitle.textContent = 'Extracción Completada (36.0 g)';
+            drawExtractionCurve();
+        }
+
+        function resetCup() {
+            state.isExtracting = false;
+            state.previewMode = true;
+            state.currentWeight = 36.0;
+            state.elapsedTime = state.shotTime;
+            document.getElementById('extractBtn').classList.remove('extracting-pulse');
+            document.getElementById('extractBtnText').textContent = 'Extraer Espresso en Vivo';
+            document.getElementById('liveStatusTitle').textContent = 'Vista Previa Interactiva';
+            recalculateModel();
+        }
+
+        function applyPreset(grind, temp, pressure) {
+            state.grind = grind;
+            state.temp = temp;
+            state.pressure = pressure;
+            grindSlider.value = grind;
+            tempSlider.value = temp;
+            pressureSlider.value = pressure;
+            state.previewMode = true;
+            if (state.isExtracting) finishExtraction();
+            recalculateModel();
+        }
+
+        // Attach Slider Event Listeners
+        grindSlider.addEventListener('input', (e) => {
+            state.grind = parseFloat(e.target.value);
+            recalculateModel();
+        });
+
+        tempSlider.addEventListener('input', (e) => {
+            state.temp = parseFloat(e.target.value);
+            recalculateModel();
+        });
+
+        pressureSlider.addEventListener('input', (e) => {
+            state.pressure = parseFloat(e.target.value);
+            recalculateModel();
+        });
+
+        // Initialize on Window Load
+        window.onload = function () {
+            initSteamAndStream();
+            recalculateModel();
+            requestAnimationFrame(renderEspressoScene);
+        };
+    </script>
+</body>
+</html>
